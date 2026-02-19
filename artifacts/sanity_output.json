@@ -1,11 +1,12 @@
 {
   "implemented_features": [
-    "A"
+    "A",
+    "B"
   ],
   "qa": [
     {
       "question": "Summarize the main contribution of TinyLoRA in 3 bullets.",
-      "answer": "Here are the main contributions of TinyLoRA in 3 bullets:\n\n* TinyLoRA is a technique for reducing trainable parameters in models by replacing a matrix with a low-dimensional trainable vector projected through a fixed random tensor, enabling training with as few as 1 changed parameter [Source: TinyLoRA_2602.04118v1.pdf, Chunk 13].\n* It achieves significant parameter efficiency by scaling trainable parameters to O(nmu), where n is the number of layers, m is the number of modules, and u is the TinyLoRA projection dimension, which can be further reduced to a single parameter when all modules share weights [Source: TinyLoRA_2602.04118v1.pdf, Chunk 13].\n* TinyLoRA demonstrates strong performance in extremely low-parameter regimes, achieving high accuracy on benchmarks like GSM8K, MATH, AIME, and AMC with as few as 1-196 trainable parameters, and shows that RL makes more information-dense updates than SFT, making it suitable for tiny update sizes [Source: TinyLoRA_2602.04118v1.pdf, Chunk 5].",
+      "answer": "Here are the main contributions of TinyLoRA in 3 bullets:\n\n* TinyLoRA is a technique for reducing trainable parameters in models by replacing a matrix with a low-dimensional trainable vector projected through a fixed random tensor, enabling training with as few as 1 changed parameter [Source: TinyLoRA_2602.04118v1.pdf, Chunk 13].\n* It achieves significant parameter efficiency by scaling the total trainable parameters to $O(nmu)$, where $n$ is the number of layers, $m$ is the number of modules, and $u$ is the TinyLoRA projection dimension, which can be further reduced to a single parameter when all modules share weights [Source: TinyLoRA_2602.04118v1.pdf, Chunk 13].\n* TinyLoRA demonstrates strong performance in the extremely-low parameter regime, achieving high accuracy on benchmarks like GSM8K, MATH, AIME, and AMC with an update size of just a few bytes, and shows that RL makes fundamentally more information-dense updates than SFT and is more suitable for training in the tiny update size regime [Source: TinyLoRA_2602.04118v1.pdf, Chunk 5].",
       "citations": [
         {
           "source": "TinyLoRA_2602.04118v1.pdf",
@@ -25,14 +26,14 @@
       "citations": [
         {
           "source": "TinyLoRA_2602.04118v1.pdf",
-          "locator": "Chunk 13",
-          "snippet": "TinyLoRA is a technique for reducing trainable parameters in models by replacing the $r \\times r$ matrix $R$ with a low-dimensional trainable vector $v \\in R^u$ projected through a fixed random tensor"
+          "locator": "Chunk 28",
+          "snippet": "9 Conclusion\nWe propose TinyLoRA and show that effective models can be tuned with far fewer parameters than previously thought to be necessary. Updates from TinyLoRA often come close to the performanc"
         }
       ]
     },
     {
       "question": "Give one concrete numeric or experimental detail from TinyLoRA and cite it.",
-      "answer": "One concrete numeric detail from TinyLoRA is that it achieves 91% accuracy on GSM8K while finetuning just 13 total parameters, which is an update size of just 26 bytes [Source: TinyLoRA_2602.04118v1.pdf, Chunk 5].",
+      "answer": "One concrete numeric detail from TinyLoRA is that it achieves 91% accuracy on GSM8K while finetuning just 13 total parameters, with an update size of just 26 bytes [Source: TinyLoRA_2602.04118v1.pdf, Chunk 5].",
       "citations": [
         {
           "source": "TinyLoRA_2602.04118v1.pdf",
@@ -58,6 +59,20 @@
         "answer": "I don't have enough information in the uploaded documents to answer that question.",
         "refused_correctly": true,
         "hallucinated_citations": false
+      }
+    ],
+    "memory_writes": [
+      {
+        "target": "USER",
+        "summary": "prefers weekly summaries on Mondays"
+      },
+      {
+        "target": "USER",
+        "summary": "Project Finance Analyst"
+      },
+      {
+        "target": "COMPANY",
+        "summary": "large asset management firm"
       }
     ]
   }

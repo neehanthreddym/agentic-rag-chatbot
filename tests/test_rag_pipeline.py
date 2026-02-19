@@ -397,3 +397,211 @@ class TestGenerateAnswer:
 
         assert result["citations"] == []
         assert result["sources_used"] == []
+
+
+# =====================================================================
+# 9. Memory Extractor — LLM-based fact extraction (unit, mocked LLM)
+# =====================================================================
+
+class TestMemoryExtractor:
+    """Test memory extraction with a mocked LLM to avoid API calls."""
+
+    @patch("src.app.memory.memory_extractor.get_llm")
+    def test_extract_high_signal_facts(self, mock_get_llm):
+        from src.app.memory.memory_extractor import extract_memory
+
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(
+            content=json.dumps({
+                "should_save": True,
+                "user_facts": ["User prefers weekly summaries on Mondays"],
+                "company_facts": ["Asset Management interfaces with Project Finance"],
+                "confidence": 0.9,
+            })
+        )
+        mock_get_llm.return_value = mock_llm
+
+        decision = extract_memory(
+            "I prefer weekly summaries on Mondays.",
+            "Noted! I'll remember that preference.",
+        )
+
+        assert decision.should_save is True
+        assert len(decision.user_facts) == 1
+        assert len(decision.company_facts) == 1
+        assert decision.confidence == 0.9
+
+    @patch("src.app.memory.memory_extractor.get_llm")
+    def test_extract_no_signal(self, mock_get_llm):
+        from src.app.memory.memory_extractor import extract_memory
+
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(
+            content=json.dumps({
+                "should_save": False,
+                "user_facts": [],
+                "company_facts": [],
+                "confidence": 0.0,
+            })
+        )
+        mock_get_llm.return_value = mock_llm
+
+        decision = extract_memory("Hello!", "Hi there!")
+
+        assert decision.should_save is False
+        assert decision.user_facts == []
+        assert decision.company_facts == []
+        assert decision.confidence == 0.0
+
+    @patch("src.app.memory.memory_extractor.get_llm")
+    def test_malformed_json_graceful(self, mock_get_llm):
+        from src.app.memory.memory_extractor import extract_memory
+
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(
+            content="This is not valid JSON at all!"
+        )
+        mock_get_llm.return_value = mock_llm
+
+        decision = extract_memory("test", "test")
+
+        # Should return empty decision, not crash
+        assert decision.should_save is False
+        assert decision.user_facts == []
+        assert decision.confidence == 0.0
+
+    @patch("src.app.memory.memory_extractor.get_llm")
+    def test_markdown_fenced_json(self, mock_get_llm):
+        """Test that JSON wrapped in markdown code fences is handled."""
+        from src.app.memory.memory_extractor import extract_memory
+
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = MagicMock(
+            content='```json\n{"should_save": true, "user_facts": ["Role: analyst"], "company_facts": [], "confidence": 0.8}\n```'
+        )
+        mock_get_llm.return_value = mock_llm
+
+        decision = extract_memory("I'm an analyst.", "Got it!")
+
+        assert decision.should_save is True
+        assert len(decision.user_facts) == 1
+        assert decision.confidence == 0.8
+
+
+# =====================================================================
+# 10. Memory Writer — file I/O with deduplication (unit, temp files)
+# =====================================================================
+
+class TestMemoryWriter:
+    """Test memory writer operations using temp directories."""
+
+    def test_append_facts_creates_content(self):
+        from src.app.memory.memory_writer import append_facts, read_memory
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "TEST_MEMORY.md")
+
+            # Write initial content
+            with open(path, "w") as f:
+                f.write("# TEST MEMORY\n")
+
+            written = append_facts(path, ["User is a data scientist"])
+            assert written == 1
+
+            content = read_memory(path)
+            assert "User is a data scientist" in content
+
+    def test_append_facts_deduplicates(self):
+        from src.app.memory.memory_writer import append_facts, read_memory
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "TEST_MEMORY.md")
+
+            with open(path, "w") as f:
+                f.write("# TEST MEMORY\n")
+
+            # Write same fact twice
+            append_facts(path, ["User prefers Python"])
+            written2 = append_facts(path, ["User prefers Python"])
+
+            assert written2 == 0  # second write should be deduped
+
+            content = read_memory(path)
+            assert content.count("User prefers Python") == 1
+
+    def test_read_memory_nonexistent_file(self):
+        from src.app.memory.memory_writer import read_memory
+
+        content = read_memory("/nonexistent/path/MEMORY.md")
+        assert content == ""
+
+    def test_append_empty_facts(self):
+        from src.app.memory.memory_writer import append_facts
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "TEST_MEMORY.md")
+            written = append_facts(path, [])
+            assert written == 0
+
+
+# =====================================================================
+# 11. Memory Manager — orchestration (unit, mocked extractor)
+# =====================================================================
+
+class TestMemoryManager:
+    """Test the memory manager orchestration logic."""
+
+    @patch("src.app.memory.memory_manager.append_facts")
+    @patch("src.app.memory.memory_manager.extract_memory")
+    def test_process_memory_high_confidence(self, mock_extract, mock_append):
+        from src.app.memory.memory_manager import process_memory
+        from src.app.memory.memory_extractor import MemoryDecision
+
+        mock_extract.return_value = MemoryDecision(
+            should_save=True,
+            user_facts=["Prefers morning meetings"],
+            company_facts=["Standard meeting time is 9 AM"],
+            confidence=0.9,
+        )
+        mock_append.return_value = 1
+
+        result = process_memory("I prefer morning meetings.", "Noted!")
+
+        assert result["memory_saved"] is True
+        assert mock_append.call_count == 2  # once for user, once for company
+
+    @patch("src.app.memory.memory_manager.append_facts")
+    @patch("src.app.memory.memory_manager.extract_memory")
+    def test_process_memory_low_confidence(self, mock_extract, mock_append):
+        from src.app.memory.memory_manager import process_memory
+        from src.app.memory.memory_extractor import MemoryDecision
+
+        mock_extract.return_value = MemoryDecision(
+            should_save=True,
+            user_facts=["Something vague"],
+            company_facts=[],
+            confidence=0.3,  # below threshold
+        )
+
+        result = process_memory("Maybe something.", "Okay.")
+
+        assert result["memory_saved"] is False
+        mock_append.assert_not_called()
+
+    @patch("src.app.memory.memory_manager.append_facts")
+    @patch("src.app.memory.memory_manager.extract_memory")
+    def test_process_memory_should_save_false(self, mock_extract, mock_append):
+        from src.app.memory.memory_manager import process_memory
+        from src.app.memory.memory_extractor import MemoryDecision
+
+        mock_extract.return_value = MemoryDecision(
+            should_save=False,
+            user_facts=[],
+            company_facts=[],
+            confidence=0.0,
+        )
+
+        result = process_memory("Hello!", "Hi!")
+
+        assert result["memory_saved"] is False
+        mock_append.assert_not_called()

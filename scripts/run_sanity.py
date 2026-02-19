@@ -14,6 +14,7 @@ import shutil
 from src.app.ingestion.pipeline import run_ingestion_pipeline
 from src.app.retrieval.retriever import get_retriever, retrieve
 from src.app.generation.generator import generate_answer
+from src.app.memory import process_memory
 from src.app.logger import get_logger
 
 logger = get_logger(__name__)
@@ -154,16 +155,67 @@ def run_sanity():
         logger.info(f"   {status}")
 
     # ------------------------------------------------------------------
+    # Step 5.1: Memory extraction — Feature B
+    # ------------------------------------------------------------------
+    logger.info("\n🧠 Running memory extraction tests...")
+
+    memory_test_turns = [
+        (
+            "I prefer weekly summaries on Mondays.",
+            "Noted! I'll remember that you prefer weekly summaries delivered on Mondays.",
+        ),
+        (
+            "I'm a Project Finance Analyst at a large asset management firm.",
+            "Thanks for sharing! That context helps me tailor my responses to your domain.",
+        ),
+    ]
+
+    for user_msg, assistant_resp in memory_test_turns:
+        logger.info(f"  💬 User: {user_msg}")
+        mem_result = process_memory(user_msg, assistant_resp)
+        logger.info(f"  🧠 Saved={mem_result['memory_saved']}, confidence={mem_result['confidence']:.2f}")
+
+    # Build memory_writes from what was actually written to the files.
+    # verify_output.py expects: [{target: "USER"|"COMPANY", summary: "..."}]
+    memory_writes = []
+
+    from src.app.memory import read_memory
+    from src.app.config import USER_MEMORY_PATH, COMPANY_MEMORY_PATH
+
+    user_mem_content = read_memory(USER_MEMORY_PATH)
+    company_mem_content = read_memory(COMPANY_MEMORY_PATH)
+
+    # Extract bullet-point facts from the memory files
+    for line in user_mem_content.splitlines():
+        line = line.strip()
+        if line.startswith("- "):
+            memory_writes.append({
+                "target": "USER",
+                "summary": line[2:].strip(),
+            })
+
+    for line in company_mem_content.splitlines():
+        line = line.strip()
+        if line.startswith("- "):
+            memory_writes.append({
+                "target": "COMPANY",
+                "summary": line[2:].strip(),
+            })
+
+    logger.info(f"  📝 Total memory_writes for output: {len(memory_writes)}")
+
+    # ------------------------------------------------------------------
     # Step 6: Build the output JSON
     # ------------------------------------------------------------------
     output = {
-        "implemented_features": ["A"],
+        "implemented_features": ["A", "B"],
         "qa": qa_results,
         "demo": {
             "pdf_used": PDF_PATH,
             "num_questions": len(ANSWERABLE_QUESTIONS) + len(UNANSWERABLE_QUESTIONS),
             "retrieval_top_k": 5,
             "refusal_tests": refusal_results,
+            "memory_writes": memory_writes,
         },
     }
 

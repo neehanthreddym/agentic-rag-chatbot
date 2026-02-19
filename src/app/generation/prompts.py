@@ -20,7 +20,7 @@ CONTEXT:
 Answer the following question using the rules above."""
 
 
-MEMORY_EXTRACTION_PROMPT = """You are a memory curator. Given the following conversation turn, decide if any HIGH-SIGNAL facts should be saved to persistent memory.
+MEMORY_EXTRACTION_PROMPT = """Given the following conversation turn, decide if any HIGH-SIGNAL facts should be saved to persistent memory.
 
 HIGH-SIGNAL facts include:
 - User preferences (e.g., "I prefer Python over Java")
