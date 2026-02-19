@@ -15,6 +15,7 @@ uv.lock
 
 # ---------- Vector store data (all nested chroma_db dirs) ----------
 **/chroma_db/
+chat_chroma_db/
 sanity_chroma_db/
 test_chroma_db/
 eval_chroma_db/

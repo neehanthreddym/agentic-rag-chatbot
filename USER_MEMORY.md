@@ -1,16 +1,16 @@
-# USER MEMORY
+<!-- User memory — managed by the memory system -->
 
-<!--
-Append only high-signal, user-specific facts worth remembering.
-Do NOT dump raw conversation.
-Avoid secrets or sensitive information.
--->
 
-## Session — 2026-02-18 22:58
+## Session — 2026-02-19 01:00
 
 - prefers weekly summaries on Mondays
 
 
-## Session — 2026-02-18 22:58
+## Session — 2026-02-19 01:00
 
-- Project Finance Analyst
+- I'm a Project Finance Analyst
+
+
+## Session — 2026-02-19 01:04
+
+- name: Tony

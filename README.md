@@ -283,3 +283,22 @@ python3 -m scripts.evaluate_pipeline
 ```bash
 python3 -m scripts.test_pipeline
 ```
+
+### Run Chat UI (Web App)
+
+```bash
+make chat
+# Opens Streamlit at http://localhost:8501
+```
+
+Upload a PDF in the sidebar, then ask questions — answers include expandable citations and automatic memory updates.
+
+### Run Sanity Check (Required for Judging)
+
+```bash
+# Run the minimal end-to-end flow and produce artifacts/sanity_output.json
+make sanity
+
+# Or run the full validation script (runs make sanity + verifies output format)
+bash scripts/sanity_check.sh
+```

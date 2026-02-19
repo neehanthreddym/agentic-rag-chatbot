@@ -1,5 +1,4 @@
-.PHONY: sanity
-# .PHONY: sanity test test-unit
+.PHONY: sanity chat test test-unit
 
 sanity:
 	@echo "🔍 Running sanity check..."
@@ -7,8 +6,12 @@ sanity:
 	.venv/bin/python -m scripts.run_sanity
 	@echo "✅ Sanity check complete — see artifacts/sanity_output.json"
 
-# test:
-# 	.venv/bin/python -m pytest tests/ -v
+chat:
+	@echo "🚀 Launching chat UI..."
+	.venv/bin/streamlit run app.py
 
-# test-unit:
-# 	.venv/bin/python -m pytest tests/ -v -m "not integration"
+test:
+	.venv/bin/python -m pytest tests/ -v
+
+test-unit:
+	.venv/bin/python -m pytest tests/ -v -m "not integration"

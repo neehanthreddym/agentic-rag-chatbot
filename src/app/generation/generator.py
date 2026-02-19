@@ -95,13 +95,17 @@ def generate_answer(query: str, context_docs: list[Document]) -> dict:
     citations = _extract_citations(answer_text, context_docs)
     sources_used = list({c["source"] for c in citations})
 
+    # Strip inline citation markers so the displayed answer is clean
+    clean_answer = re.sub(r"\s*\[Source:\s*.+?,\s*Chunk\s*\d+\]", "", answer_text)
+    clean_answer = clean_answer.strip()
+
     logger.info(
         f"✅ Answer generated with {len(citations)} citation(s) "
         f"from {len(sources_used)} source(s)"
     )
 
     return {
-        "answer": answer_text,
+        "answer": clean_answer,
         "citations": citations,
         "sources_used": sources_used,
     }
