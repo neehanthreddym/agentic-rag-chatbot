@@ -1,7 +1,6 @@
-# COMPANY MEMORY
+<!-- Company memory — managed by the memory system -->
 
-<!--
-Append reusable org-wide learnings that could help colleagues too.
-Do NOT dump raw conversation.
-Avoid secrets or sensitive information.
--->
+
+## Session — 2026-02-19 12:29
+
+- company name: Community Dreams Foundation

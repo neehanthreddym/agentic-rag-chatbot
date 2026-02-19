@@ -1,7 +1,12 @@
-# USER MEMORY
+<!-- User memory — managed by the memory system -->
+    
 
-<!--
-Append only high-signal, user-specific facts worth remembering.
-Do NOT dump raw conversation.
-Avoid secrets or sensitive information.
--->
+## Session — 2026-02-19 12:29
+
+- stated expertise: Generative AI specialist
+- role: Volunteer
+
+
+## Session — 2026-02-19 12:29
+
+- Building an Agentic RAG Chatbot
