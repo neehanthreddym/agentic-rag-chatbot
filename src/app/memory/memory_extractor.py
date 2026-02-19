@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.app.generation.prompts import MEMORY_EXTRACTION_PROMPT
-from src.app.utils import get_llm
+from src.app.utils import get_llm, log_token_usage
 from src.app.logger import get_logger
 
 logger = get_logger(__name__)
@@ -60,6 +60,7 @@ def extract_memory(
     try:
         logger.info("🧠 Extracting memory from conversation turn...")
         response = llm.invoke(messages)
+        log_token_usage(response)
         raw = response.content.strip()
 
         # Strip markdown code fences if the LLM wraps its JSON

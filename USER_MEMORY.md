@@ -1,16 +1,12 @@
 <!-- User memory — managed by the memory system -->
+    
+
+## Session — 2026-02-19 12:29
+
+- stated expertise: Generative AI specialist
+- role: Volunteer
 
 
-## Session — 2026-02-19 01:00
+## Session — 2026-02-19 12:29
 
-- prefers weekly summaries on Mondays
-
-
-## Session — 2026-02-19 01:00
-
-- I'm a Project Finance Analyst
-
-
-## Session — 2026-02-19 01:04
-
-- name: Tony
+- Building an Agentic RAG Chatbot

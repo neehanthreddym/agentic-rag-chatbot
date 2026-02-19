@@ -11,6 +11,62 @@ Provide a brief, readable overview of how the Agentic RAG Chatbot works:
 
 ## High-Level Flow
 
+### 0) Agentic Query Router
+The router is the first step in the response pipeline. It classifies incoming queries to determine the optimal knowledge source.
+
+**Three Routes:**
+1. **document_search** — Query is about uploaded documents
+   - Example: "What are the main findings of this paper?"
+   - Response: Retrieves relevant chunks, generates answer with citations
+   
+2. **memory_lookup** — Query is about stored user/company information
+   - Example: "What's my role?" or "What tech stack did we choose?"
+   - Response: Generates answer grounded in stored memory
+   
+3. **general** — Query is conversational or general knowledge
+   - Example: "Hi!" or "What's the weather?" or "Explain quantum computing"
+   - Response: Generates conversational reply without document/memory grounding
+
+**How it Works:**
+- Router uses an LLM call to classify the query into one of the three routes
+- Takes context: whether documents are currently loaded (has_vectorstore flag)
+- **Safety: document_search is automatically downgraded to general if no vectorstore is loaded**
+- Graceful fallback: if classification fails, defaults to "general" mode
+
+**Implementation:**
+- Location: `src/app/routing/router.py`
+- Uses `ROUTER_PROMPT` from `src/app/generation/prompts.py`
+- Returns route name: "document_search", "memory_lookup", or "general"
+
+### 0.5) Answer Generation (Route-Specific)
+Once the router determines the best route, the generator produces an appropriate response:
+
+**RAG Mode (document_search route):**
+- Retrieves top-k relevant chunks from the document vectorstore
+- Uses `RAG_SYSTEM_PROMPT` with context injected
+- LLM instructed to cite with `[Source: filename, Chunk N]` format
+- Citations are extracted, deduplicated, and formatted for display
+- Returns: answer + citation list + sources used
+
+**Memory Mode (memory_lookup route):**
+- Reads stored user and company memory from markdown files
+- Uses `MEMORY_ANSWER_PROMPT` with memory context injected
+- LLM generates conversational response grounded in stored facts
+- Falls back gracefully: "I don't have that stored in my memory yet..."
+- Returns: answer (citations are empty)
+
+**General Mode (general route):**
+- No context provided to the LLM
+- Uses `GENERAL_ANSWER_PROMPT` for conversational tone
+- LLM can provide general knowledge/small talk responses
+- Returns: answer (citations are empty)
+
+**Implementation:**
+- Location: `src/app/generation/generator.py`
+- Functions: `generate_rag_answer()`, `generate_memory_answer()`, `generate_general_answer()`
+- Unified entry point: `generate_answer(query, context_docs, mode)`
+- All functions are timed via `@timer` decorator for performance tracking
+
 ### 1) Ingestion (Upload → Parse → Chunk)
 - Supported inputs: PDF files (arXiv papers)
 - Parsing approach: `unstructured` library with `hi_res` strategy for tables/images
@@ -58,13 +114,31 @@ Provide a brief, readable overview of how the Agentic RAG Chatbot works:
 
 ---
 
+## Application Flow (UI Layer)
+
+**In `app.py` (Streamlit interface):**
+
+1. User uploads a PDF (optional) — triggers ingestion pipeline
+2. User asks a question in the chat input
+3. System flow:
+   - **Route:** Call `route_query(prompt, has_vectorstore)` → determines "document_search" | "memory_lookup" | "general"
+   - **Retrieve (if document_search):** Use retriever to fetch top-k chunks
+   - **Generate:** Call `generate_answer(prompt, docs, mode)` → returns answer + citations
+   - **Memory:** Call `process_memory(prompt, answer)` → extracts & saves high-signal facts
+   - **Display:** Show answer + citations + memory indicator in UI
+
+---
+
 ## Tradeoffs & Next Steps
 - Why this design?
   - Modular: memory system is decoupled from RAG pipeline — can be enabled/disabled independently
   - LLM-as-judge: leverages the LLM's understanding to curate high-signal facts rather than rules-based extraction
   - Confidence gating: the threshold prevents low-quality facts from polluting memory
+  - **Agentic routing:** A separate LLM classifier intelligently dispatches queries to the right mode (documents, memory, or conversational), rather than using heuristics
 - What you would improve with more time:
   - Semantic deduplication (embeddings-based) instead of substring matching
   - Memory retrieval: feed stored memories back into the RAG prompt for personalized answers
   - Memory expiry/decay for stale facts
   - Multi-user support with separate memory files per user
+  - **Router enhancement:** Use multi-turn context in routing decisions (e.g., "What does that mean?" → understand context from previous exchange)
+  - **Router caching:** Cache routing decisions for follow-up questions to reduce LLM calls

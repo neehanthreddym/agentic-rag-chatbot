@@ -115,6 +115,8 @@ with st.sidebar:
         type=["pdf"],
         label_visibility="collapsed",
     )
+    
+    st.caption("Max file size: 25 MB")
 
     if uploaded and (
         not st.session_state.ingested
@@ -141,7 +143,6 @@ with st.sidebar:
                 st.session_state.vectorstore = vectorstore
                 st.session_state.ingested = True
                 st.session_state.ingested_filename = uploaded.name
-                st.session_state.messages = []  # reset chat for new doc
                 status.update(label="✅ Ready to chat!", state="complete")
             except Exception as e:
                 status.update(label="❌ Ingestion failed", state="error")
@@ -199,8 +200,7 @@ with st.sidebar:
 st.markdown("# 💬 Chat with your documents")
 
 if not st.session_state.ingested:
-    st.info("👈 Upload a PDF in the sidebar to start chatting.")
-    st.stop()
+    st.info("👈 Upload a PDF in the sidebar for document Q\u0026A, or just start chatting.")
 
 # Render conversation history
 for msg in st.session_state.messages:
@@ -230,7 +230,7 @@ for msg in st.session_state.messages:
                 )
 
 # Chat input
-if prompt := st.chat_input("Ask a question about your document..."):
+if prompt := st.chat_input("Ask a question..."):
     # Add user message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -239,16 +239,28 @@ if prompt := st.chat_input("Ask a question about your document..."):
     # Generate response
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            from src.app.retrieval.retriever import get_retriever, retrieve
             from src.app.generation.generator import generate_answer
             from src.app.memory import process_memory
+            from src.app.routing.router import route_query
 
-            # Retrieve
-            retriever = get_retriever(st.session_state.vectorstore)
-            docs = retrieve(retriever, prompt)
+            # Step 1: Route the query
+            route = route_query(prompt, has_vectorstore=bool(st.session_state.vectorstore))
 
-            # Generate
-            result = generate_answer(prompt, docs)
+            # Step 2: Handle each route
+            docs = []
+            if route == "document_search":
+                # Retrieve from documents
+                from src.app.retrieval.retriever import get_retriever, retrieve
+                retriever = get_retriever(st.session_state.vectorstore)
+                docs = retrieve(retriever, prompt)
+                result = generate_answer(prompt, docs, mode="rag")
+            elif route == "memory_lookup":
+                # Answer from memory
+                result = generate_answer(prompt, [], mode="memory")
+            else:  # route == "general"
+                # Conversational answer
+                result = generate_answer(prompt, [], mode="general")
+
             answer = result["answer"]
             citations = result["citations"]
 

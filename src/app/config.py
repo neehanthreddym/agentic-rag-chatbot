@@ -15,6 +15,17 @@ LLM_TEMPERATURE = 0
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
+# --- Pricing (USD per 1M tokens) ---
+GEMINI_PRICING = {
+    "input": 0.10,
+    "output": 0.40
+}
+
+GROQ_PRICING = {
+    "input": 0.11,
+    "output": 0.34
+}
+
 # --- LLM Provider Toggle ---
 # Set to "gemini" or "groq"
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini")
